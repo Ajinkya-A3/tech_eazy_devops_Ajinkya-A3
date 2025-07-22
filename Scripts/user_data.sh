@@ -1,17 +1,18 @@
 #!/bin/bash
 set -e
 
-# Update system and install dependencies
+# Update the system
 sudo apt update -y
 sudo apt install -y openjdk-21-jdk maven git
 
-# Clone the app repository
+# Clone the application repository
 cd /home/ubuntu
 git clone https://github.com/techeazy-consulting/techeazy-devops.git
 cd techeazy-devops
 
-# Build the Java app
+# Build the application
 mvn clean package
 
-# Run the app in background
-nohup java -jar target/techeazy-devops-0.0.1-SNAPSHOT.jar > output.log 2>&1 &
+# Run the application with root privileges so it can bind to port 80
+nohup sudo java -jar target/techeazy-devops-0.0.1-SNAPSHOT.jar > /home/ubuntu/app.out.log 2> /home/ubuntu/app.err.log &
+
