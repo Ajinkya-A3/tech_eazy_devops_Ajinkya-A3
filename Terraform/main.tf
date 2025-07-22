@@ -21,7 +21,7 @@ resource "aws_instance" "name" {
 
 
 resource "aws_security_group" "web_sg" {
-  name        = "sg-techeazy-${var.env}"
+  name        = "techeazy-sg-${var.env}"
   description = "Allow HTTP for ${var.env}"
   vpc_id      = var.vpc_id
 
