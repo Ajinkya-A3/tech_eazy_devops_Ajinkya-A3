@@ -71,6 +71,12 @@ policy_path   = "../policies/ec2_policy.json"
 
 ---
 
+## 🌐 Application Preview
+
+![App Running on EC2](assets/result.jpg)
+
+---
+
 ## 📜 License
 
 MIT License
