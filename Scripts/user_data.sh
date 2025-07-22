@@ -16,3 +16,5 @@ mvn clean package
 # Run the application with root privileges so it can bind to port 80
 nohup sudo java -jar target/techeazy-devops-0.0.1-SNAPSHOT.jar > /home/ubuntu/app.out.log 2> /home/ubuntu/app.err.log &
 
+# Schedule automatic shutdown after 60 minutes
+echo "sudo shutdown -h now" | at now + 60 minutes
