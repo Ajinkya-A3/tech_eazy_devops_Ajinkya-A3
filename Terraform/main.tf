@@ -10,7 +10,10 @@ resource "aws_instance" "server" {
     "env"  = var.env
   }
 
-  user_data            = file(var.script_path)
+  user_data = templatefile(var.script_path, {
+    s3_bucket_name = var.s3_bucket_name
+  })
+
   iam_instance_profile = aws_iam_instance_profile.upload_profile.name
 }
 

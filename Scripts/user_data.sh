@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-# Update the system
+# Update system and install dependencies
 sudo apt update -y
-sudo apt install -y openjdk-21-jdk maven git
+sudo apt install -y openjdk-21-jdk maven git awscli at
 
 # Clone the application repository
 cd /home/ubuntu
@@ -13,8 +13,28 @@ cd test-repo-for-devops
 # Build the application
 mvn clean package
 
-# Run the application with root privileges so it can bind to port 80
-nohup sudo java -jar target/hellomvc-0.0.1-SNAPSHOT.jar > /home/ubuntu/app.out.log 2> /home/ubuntu/app.err.log &
+# Create local log directories
+mkdir -p /home/ubuntu/logs/app
+mkdir -p /home/ubuntu/logs/ec2
 
-# Schedule automatic shutdown after 60 minutes
-echo "sudo shutdown -h now" | at now + 60 minutes
+# Run the application and redirect logs
+nohup sudo java -jar target/hellomvc-0.0.1-SNAPSHOT.jar \
+  > /home/ubuntu/logs/app/app.out.log \
+  2> /home/ubuntu/logs/app/app.err.log &
+
+# Schedule log upload and shutdown
+cat <<'EOF' | at now + 60 minutes
+#!/bin/bash
+
+
+# Copy EC2 system logs
+sudo cp /var/log/cloud-init.log /home/ubuntu/logs/ec2/
+sudo cp /var/log/cloud-init-output.log /home/ubuntu/logs/ec2/
+
+# Upload logs to S3 (replace with actual bucket name or export before)
+aws s3 cp /home/ubuntu/logs/ec2/ s3://$S3_BUCKET_NAME/logs/ec2/ --recursive
+aws s3 cp /home/ubuntu/logs/app/ s3://$S3_BUCKET_NAME/logs/app/ --recursive
+
+# Shutdown the instance
+sudo shutdown -h now
+EOF
