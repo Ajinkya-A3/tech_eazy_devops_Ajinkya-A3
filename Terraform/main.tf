@@ -1,4 +1,4 @@
-resource "aws_instance" "name" {
+resource "aws_instance" "server" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   key_name               = var.key_name
@@ -10,8 +10,8 @@ resource "aws_instance" "name" {
     "env"  = var.env
   }
 
-  user_data             = file(var.script_path)
-  iam_instance_profile  = aws_iam_instance_profile.test.name
+  user_data            = file(var.script_path)
+  iam_instance_profile = aws_iam_instance_profile.upload_profile.name
 }
 
 resource "aws_security_group" "web_sg" {
@@ -41,4 +41,20 @@ resource "aws_security_group" "web_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_instance" "reader" {
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  subnet_id              = var.subnet_id
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  tags = {
+    "Name" = "techeazy-reader-${var.env}"
+    "env"  = var.env
+  }
+
+  iam_instance_profile = aws_iam_instance_profile.readonly_profile.name
+
 }
