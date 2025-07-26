@@ -7,7 +7,7 @@ resource "aws_s3_bucket_ownership_controls" "logs_bucket" {
   bucket = aws_s3_bucket.logs_bucket.id
 
   rule {
-    object_ownership = "BucketOwnerEnforced"
+    object_ownership = "BucketOwnerPreferred"
   }
 }
 
