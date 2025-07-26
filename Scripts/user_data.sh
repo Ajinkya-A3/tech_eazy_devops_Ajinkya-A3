@@ -3,7 +3,15 @@ set -e
 
 # Update system and install dependencies
 sudo apt update -y
-sudo apt install -y openjdk-21-jdk maven git awscli at
+# Update system and install dependencies
+sudo apt update -y
+sudo apt install -y unzip curl git openjdk-21-jdk maven at
+
+# Install AWS CLI v2 (official method)
+cd /tmp
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
 
 # Clone the application repository
 cd /home/ubuntu
@@ -18,12 +26,13 @@ mkdir -p /home/ubuntu/logs/app
 mkdir -p /home/ubuntu/logs/ec2
 
 # Run the application and redirect logs
-nohup sudo java -jar target/hellomvc-0.0.1-SNAPSHOT.jar \
-  > /home/ubuntu/logs/app/app.out.log \
-  2> /home/ubuntu/logs/app/app.err.log &
+sudo nohup java -jar target/hellomvc-0.0.1-SNAPSHOT.jar \
+  > /home/ubuntu/app.out.log \
+  2> /home/ubuntu/app.err.log &
+
 
 # Schedule log upload and shutdown
-cat <<'EOF' | at now + 60 minutes
+cat <<'EOF' | at now + 3 minutes
 #!/bin/bash
 
 
@@ -32,8 +41,8 @@ sudo cp /var/log/cloud-init.log /home/ubuntu/logs/ec2/
 sudo cp /var/log/cloud-init-output.log /home/ubuntu/logs/ec2/
 
 # Upload logs to S3 (replace with actual bucket name or export before)
-aws s3 cp /home/ubuntu/logs/ec2/ s3://$S3_BUCKET_NAME/logs/ec2/ --recursive
-aws s3 cp /home/ubuntu/logs/app/ s3://$S3_BUCKET_NAME/logs/app/ --recursive
+sudo aws s3 cp /home/ubuntu/logs/ec2/ s3://$S3_BUCKET_NAME/logs/ec2/ --recursive
+sudo aws s3 cp /home/ubuntu/logs/app/ s3://$S3_BUCKET_NAME/logs/app/ --recursive
 
 # Shutdown the instance
 sudo shutdown -h now
