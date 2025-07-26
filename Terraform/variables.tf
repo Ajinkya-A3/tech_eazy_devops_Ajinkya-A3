@@ -58,3 +58,13 @@ variable "policy_path" {
   default     = "../policies/ec2_policy.json"
 
 }
+
+variable "s3_bucket_name" {
+  type        = string
+  description = "Name of the private S3 bucket for logs"
+
+  validation {
+    condition     = length(var.s3_bucket_name) > 0
+    error_message = "Bucket name must be provided."
+  }
+}
