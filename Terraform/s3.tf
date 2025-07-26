@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "logs_bucket" {
-  bucket = var.s3_bucket_name
+  bucket        = var.s3_bucket_name
   force_destroy = true # optional: allows TF to destroy non-empty buckets during cleanup
 }
 

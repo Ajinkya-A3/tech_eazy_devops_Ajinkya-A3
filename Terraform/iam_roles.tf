@@ -17,7 +17,7 @@ resource "aws_iam_role" "s3_upload_only_role" {
 # IAM Policy for S3 Upload-Only Role from a JSON file
 
 resource "aws_iam_policy" "s3_upload_only_policy" {
-  name   = "s3-upload-policy-${var.env}"
+  name = "s3-upload-policy-${var.env}"
   policy = templatefile("${var.policy_path}", {
     bucket_arn = aws_s3_bucket.logs_bucket.arn
   })
