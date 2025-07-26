@@ -1,12 +1,7 @@
 {
   "Version": "2012-10-17",
   "Statement": [
-    {
-      "Sid": "DenyAllByDefault",
-      "Effect": "Deny",
-      "Action": "*",
-      "Resource": "*"
-    },
+    
     {
       "Sid": "AllowPutOnlyOnBucket",
       "Effect": "Allow",
