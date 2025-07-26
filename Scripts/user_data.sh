@@ -27,8 +27,8 @@ mkdir -p /home/ubuntu/logs/ec2
 
 # Run the application and redirect logs
 sudo nohup java -jar target/hellomvc-0.0.1-SNAPSHOT.jar \
-  > /home/ubuntu/app.out.log \
-  2> /home/ubuntu/app.err.log &
+  > /home/ubuntu/logs/app/app.out.log \
+  2> /home/ubuntu/logs/app/app.err.log &
 
 
 # Schedule log upload and shutdown
