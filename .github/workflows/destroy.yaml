@@ -11,9 +11,7 @@ on:
         options:
           - dev
           - prod
-  push:
-    branches:
-      - workflow
+
 
 jobs:
   terraform-destroy:
