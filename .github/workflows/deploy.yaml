@@ -81,9 +81,11 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        working-directory: Terraform
 
       - name: Terraform Apply
         run: terraform apply -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
+        working-directory: Terraform
 
       - name: Wait for App to Start
         run: sleep 90
@@ -98,6 +100,7 @@ jobs:
             echo "❌ App is not reachable"
             exit 1
           fi
+        working-directory: Terraform
 
   terraform-destroy:
     needs: terraform-apply
@@ -117,9 +120,11 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        working-directory: Terraform
 
       - name: Wait before Destroy
         run: sleep 300
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
+        working-directory: Terraform
