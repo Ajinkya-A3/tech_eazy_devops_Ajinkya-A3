@@ -12,6 +12,7 @@ on:
           - dev
           - prod
 
+
 jobs:
   terraform-destroy:
     runs-on: ubuntu-latest
