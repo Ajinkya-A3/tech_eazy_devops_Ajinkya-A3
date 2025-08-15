@@ -1,4 +1,4 @@
-name: Terraform Deploy with App Check and Auto Destroy
+name: Terraform Deploy with App Check 
 
 on:
   workflow_dispatch:
