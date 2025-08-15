@@ -11,9 +11,9 @@ on:
         options:
           - dev
           - prod
-  schedule:
-    - cron: "*/2 * * * *" 
-
+  push:
+    branches:
+      - workflow
 
 jobs:
   terraform-destroy:
