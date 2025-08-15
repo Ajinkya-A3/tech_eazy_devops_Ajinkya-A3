@@ -1,33 +1,125 @@
-# This is a basic workflow to help you get started with Actions
+name: Terraform Deploy with App Check and Auto Destroy
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select environment (dev or prod)"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  tflint:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
+        name: Checkout source code
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - uses: actions/cache@v4
+        name: Cache plugin dir
+        with:
+          path: ~/.tflint.d/plugins
+          key: ubuntu-tflint-${{ hashFiles('.tflint.hcl') }}
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - uses: terraform-linters/setup-tflint@v4
+        name: Setup TFLint
+        with:
+          tflint_version: v0.52.0
+
+      - name: Init TFLint plugins
+        run: tflint --init
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run TFLint
+        run: tflint -f compact
+
+  tfsec:
+    needs: tflint
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
+      - name: Install tfsec
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+      - name: Run tfsec and generate HTML report
+        run: |
+          tfsec . --format html --out tfsec-report.html --soft-fail
+
+      - name: Upload tfsec HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfsec-html-report
+          path: tfsec-report.html
+
+  terraform-apply:
+    needs: tfsec
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ap-south-2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
+
+      - name: Wait for App to Start
+        run: sleep 90
+
+      - name: Check App Status
+        run: |
+          APP_URL=$(terraform output -raw app_url)
+          echo "Checking app at $APP_URL"
+          if curl -s --head --fail "$APP_URL"; then
+            echo "✅ App is running"
+          else
+            echo "❌ App is not reachable"
+            exit 1
+          fi
+
+  terraform-destroy:
+    needs: terraform-apply
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ap-south-2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Wait before Destroy
+        run: sleep 300
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
