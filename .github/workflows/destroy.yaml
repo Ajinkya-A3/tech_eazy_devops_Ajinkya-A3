@@ -11,6 +11,8 @@ on:
         options:
           - dev
           - prod
+  schedule:
+    - cron: "*/2 * * * *" 
 
 
 jobs:
