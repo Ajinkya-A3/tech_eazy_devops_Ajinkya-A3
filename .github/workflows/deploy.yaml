@@ -85,6 +85,11 @@ jobs:
         run: terraform init
         working-directory: Terraform
 
+      - name: Select or Create Workspace
+        run: |
+          terraform workspace select ${{ github.event.inputs.environment }} || terraform workspace new ${{ github.event.inputs.environment }}
+        working-directory: Terraform
+
       - name: Terraform Apply
         run: terraform apply -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
         working-directory: Terraform
@@ -120,31 +125,3 @@ jobs:
             sleep 10
           done
           echo "✅ App is running"
-
-
-  # terraform-destroy:
-  #   needs: terraform-apply
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     AWS_REGION: ap-south-2
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Setup Terraform
-  #       uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         terraform_version: 1.12.2
-
-  #     - name: Terraform Init
-  #       run: terraform init
-  #       working-directory: Terraform
-
-  #     - name: Wait before Destroy
-  #       run: sleep 300
-
-  #     - name: Terraform Destroy
-  #       run: terraform destroy -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
-  #       working-directory: Terraform
