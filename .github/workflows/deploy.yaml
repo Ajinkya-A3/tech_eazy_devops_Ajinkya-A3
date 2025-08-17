@@ -66,6 +66,8 @@ jobs:
   terraform-apply:
     needs: tfsec
     runs-on: ubuntu-latest
+    outputs:
+      app_url: ${{ steps.get-output.outputs.app_url }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -87,20 +89,38 @@ jobs:
         run: terraform apply -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
         working-directory: Terraform
 
-      - name: Wait for App to Start
-        run: sleep 90
-
-      - name: Check App Status
+      - name: Get App URL
+        id: get-output
         run: |
           APP_URL=$(terraform output -raw app_url)
-          echo "Checking app at $APP_URL"
-          if curl -s --head --fail "$APP_URL"; then
-            echo "✅ App is running"
-          else
-            echo "❌ App is not reachable"
-            exit 1
-          fi
+          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
         working-directory: Terraform
+
+  check-app:
+    needs: terraform-apply
+    runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ needs.terraform-apply.outputs.app_url }}
+    steps:
+      - name: Wait for app to start
+        run: sleep 90
+
+      - name: Check App Health with Retries
+        run: |
+          echo "🔍 Checking app at $APP_URL"
+          retries=3
+          count=0
+          until curl -s --head --fail "$APP_URL"; do
+            count=$((count+1))
+            if [ $count -ge $retries ]; then
+              echo "❌ App is not reachable after $retries attempts"
+              exit 1
+            fi
+            echo "⚠️ App not reachable, retrying in 10 seconds... (attempt $count)"
+            sleep 10
+          done
+          echo "✅ App is running"
+
 
   # terraform-destroy:
   #   needs: terraform-apply
