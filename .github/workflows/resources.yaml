@@ -40,8 +40,8 @@ jobs:
 
       - name: Generate Resource Report
         run: |
-          chmod +x ./Scripts/resource_report.sh
-          ./Scripts/resource_report.sh > resources.json
+          chmod +x ../Scripts/resource_report.sh
+          ../Scripts/resource_report.sh > resources.json
         working-directory: Terraform
 
       - name: Upload Resource Report
