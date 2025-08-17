@@ -44,7 +44,20 @@ jobs:
           ../Scripts/resource_report.sh > resources.json
         working-directory: Terraform
 
+      - name: Check if resources.json is empty
+        id: check_json
+        run: |
+          if [ ! -s resources.json ] || [ "$(jq length resources.json)" -eq 0 ]; then
+            echo "empty=true" >> $GITHUB_OUTPUT
+            echo "⚠️ No resources found. Skipping artifact upload."
+          else
+            echo "empty=false" >> $GITHUB_OUTPUT
+            echo "✅ Resources found. Will upload artifact."
+          fi
+        working-directory: Terraform
+
       - name: Upload Resource Report
+        if: steps.check_json.outputs.empty == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: terraform-resources
