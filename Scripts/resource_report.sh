@@ -1,6 +1,14 @@
 
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+# Check if terraform state exists
+if ! terraform show -json > /dev/null 2>&1; then
+  echo "❌ No Terraform state found. Run 'terraform apply' first."
+  exit 1
+fi
+
 terraform show -json | jq '
   [
     .values.root_module.resources? // [],
