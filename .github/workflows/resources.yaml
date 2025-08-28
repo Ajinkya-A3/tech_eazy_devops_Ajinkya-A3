@@ -1,32 +1,64 @@
-# This is a basic workflow to help you get started with Actions
+name: Terraform Resource Report
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
- 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select environment (dev or prod)"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  resource-report:
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ap-south-2
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.2
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Terraform Init
+        run: terraform init
+        working-directory: Terraform
+
+      - name: Select/Create Workspace
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          terraform workspace select ${{ github.event.inputs.environment }}
+        working-directory: Terraform
+
+      - name: Generate Resource Report
+        run: |
+          chmod +x ../Scripts/resource_report.sh
+          ../Scripts/resource_report.sh > resources.json
+        working-directory: Terraform
+
+      - name: Check if resources.json is empty
+        id: check_json
+        run: |
+          if [ ! -s resources.json ] || [ "$(jq length resources.json)" -eq 0 ]; then
+            echo "empty=true" >> $GITHUB_OUTPUT
+            echo "⚠️ No resources found. Skipping artifact upload."
+          else
+            echo "empty=false" >> $GITHUB_OUTPUT
+            echo "✅ Resources found. Will upload artifact."
+          fi
+        working-directory: Terraform
+
+      - name: Upload Resource Report
+        if: steps.check_json.outputs.empty == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-resources
+          path: Terraform/resources.json

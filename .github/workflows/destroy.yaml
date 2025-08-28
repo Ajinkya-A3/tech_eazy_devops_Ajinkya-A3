@@ -34,6 +34,12 @@ jobs:
         run: terraform init
         working-directory: Terraform
 
+
+      - name: Select  Workspace
+        run: |
+          terraform workspace select ${{ github.event.inputs.environment }} 
+        working-directory: Terraform
+
       - name: Destroy Terraform Infrastructure
         run: terraform destroy -auto-approve --var-file="${{ github.event.inputs.environment }}.tfvars"
         working-directory: Terraform
