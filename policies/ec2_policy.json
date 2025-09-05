@@ -1,7 +1,6 @@
 {
   "Version": "2012-10-17",
   "Statement": [
-    
     {
       "Sid": "AllowPutOnlyOnBucket",
       "Effect": "Allow",
@@ -23,6 +22,17 @@
           "s3:prefix": "logs/*"
         }
       }
+    },
+    {
+      "Sid": "AllowCloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "*"
     }
   ]
 }
