@@ -1,1 +1,54 @@
 
+name: Start CloudWatch Agent via SSM
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select environment (dev or prod)"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  start-cloudwatch-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-2
+
+      - name: Get AWS account ID
+        id: account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+
+      - name: Find EC2 instance ID by environment tag
+        id: instance
+        run: |
+          ENV=${{ github.event.inputs.environment }}
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=techeazy-$ENV" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+
+      - name: Run CloudWatch Agent setup script on EC2
+        run: |
+          aws ssm send-command \
+            --targets "Key=InstanceIds,Values=${{ steps.instance.outputs.instance_id }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Start CloudWatch Agent" \
+            --parameters 'commands=[
+              "sudo bash -c '\''$(curl -s https://raw.githubusercontent.com/Ajinkya-A3/tech_eazy_devops_Ajinkya-A3/cloudwatch/Scripts/cloudwatch.sh)'\''"
+            ]'
