@@ -49,6 +49,6 @@ jobs:
             --targets "Key=InstanceIds,Values=${{ steps.instance.outputs.instance_id }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Start CloudWatch Agent" \
-            --parameters 'commands=[
-              "sudo bash -c '\''$(curl -s https://raw.githubusercontent.com/Ajinkya-A3/tech_eazy_devops_Ajinkya-A3/cloudwatch/Scripts/cloudwatch.sh)'\''"
-            ]'
+            --parameters 'commands=["curl -fsSL https://raw.githubusercontent.com/Ajinkya-A3/tech_eazy_devops_Ajinkya-A3/cloudwatch/Scripts/cloudwatch.sh | sudo bash"]' \
+            --cloud-watch-output-config '{"CloudWatchLogGroupName":"ssm-command-logs","CloudWatchOutputEnabled":true}'
+
