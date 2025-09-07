@@ -1,6 +1,6 @@
-
-
 name: Start CloudWatch Agent via SSM
+
+
 
 on:
   workflow_dispatch:
@@ -44,12 +44,20 @@ jobs:
             --query "Reservations[].Instances[].InstanceId" --output text)
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
 
-      - name: Run CloudWatch Agent setup script on EC2
+
+      - name: Run CloudWatch Agent setup script via SSM
+
         run: |
           aws ssm send-command \
             --targets "Key=InstanceIds,Values=${{ steps.instance.outputs.instance_id }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Start CloudWatch Agent" \
             --parameters 'commands=[
-              "sudo bash -c '\''$(curl -s https://raw.githubusercontent.com/Ajinkya-A3/tech_eazy_devops_Ajinkya-A3/cloudwatch/Scripts/cloudwatch.sh)'\''"
-            ]'
+
+              "curl -fsSL https://raw.githubusercontent.com/Ajinkya-A3/tech_eazy_devops_Ajinkya-A3/cloudwatch/Scripts/cloudwatch.sh -o /tmp/cloudwatch.sh",
+              "chmod +x /tmp/cloudwatch.sh",
+              "bash /tmp/cloudwatch.sh"
+            ]' \
+            --region ap-south-2 \
+            --cloud-watch-output-config "CloudWatchLogGroupName=ssm-command-logs,CloudWatchOutputEnabled=true"
+
